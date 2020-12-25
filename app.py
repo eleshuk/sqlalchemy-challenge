@@ -1,4 +1,4 @@
-# Import dependencies  
+# Import dependencies
 from flask import Flask
 from flask import jsonify
 
@@ -70,8 +70,47 @@ def precipitation():
 
     return jsonify(precip)
 
+
+# Return a JSON list of stations from the dataset.
+@app.route("/api/v1.0/stations")
+def stations():
+    session = Session(engine)
+    station_results = session.query(Station.station).all()
+    session.close()
+
+# Convert list of tuples into normal list
+    all_stations = list(np.ravel(station_results))
+
+    return jsonify(all_stations)
+
+# Query the dates and temperature observations of the most active station for the last year of data.
+# Return a JSON list of temperature observations (TOBS) for the previous year.
+@app.route("/api/v1.0/tobs")
+def tobs():
+    # most active station is "USC00519281"
+    session = Session(engine)
+    # Get most recent date, last date, and first date
+    most_recent_date = session.query(Measurement.date).order_by(Measurement.date.desc()).first()
+    last_date = dt.datetime.strptime(most_recent_date[0], '%Y-%m-%d')
+    first_date = dt.date((last_date.year -1), last_date.month, last_date.day)
+
+    results = session.query(Measurement.date, Measurement.tobs).\
+            filter(Measurement.date >= first_date).all()
+
+    session.close()
+
+    # Return the JSON representation of your dictionary.
+    tobs_date = []
+    for date, tobs in results:
+        tobs_dict = {}
+        tobs_dict[date] = tobs
+        tobs_date.append(tobs_dict)
+
+    return jsonify(tobs_date)
+
+
 if __name__ == "__main__":
-    app.run(debug=True)  
+    app.run(debug=True)
 
 
 
