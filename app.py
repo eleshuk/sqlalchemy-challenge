@@ -108,6 +108,50 @@ def tobs():
 
     return jsonify(tobs_date)
 
+# Return a JSON list of the minimum temperature, the average temperature, and the max temperature for a given start or start-end range.
+# When given the start only, calculate TMIN, TAVG, and TMAX for all dates greater than and equal to the start date.
+# When given the start and the end date, calculate the TMIN, TAVG, and TMAX for dates between the start and end date inclusive.
+
+@app.route("/api/v1.0/<start>")
+def temp_start_given_date(start):
+    session = Session(engine)
+
+    results = session.query(Measurement.date, func.min(Measurement.tobs), func.max(Measurement.tobs), func.avg(Measurement.tobs)).\
+        filter(Measurement.date >= start).\
+        order_by(and_(Measurement.date)).all()
+
+    session.close()
+
+    new_list = []
+    for date, min, max, avg in results:
+        new_dict = {}
+        new_dict["Date"] = start
+        new_dict["TMIN"] = min
+        new_dict["TMAX"] = max
+        new_dict["TAVG"] = avg
+        new_list.append(new_dict)
+
+    return jsonify(new_list)
+
+@app.route("/api/v1.0/<start>/<end>")
+def temp_given_date(start,end):
+    session = Session(engine)
+    results = session.query(Measurement.date, func.min(Measurement.tobs), func.max(Measurement.tobs), func.avg(Measurement.tobs)).\
+        filter(and_(Measurement.date >= start, Measurement.date <= end)).\
+        group_by(Measurement.date).all()
+
+    session.close()
+
+    new_list = []
+    for date, min, max, avg in results:
+        new_dict = {}
+        new_dict["Date"] = date
+        new_dict["TMIN"] = min
+        new_dict["TMAX"] = max
+        new_dict["TAVG"] = avg
+        new_list.append(new_dict)
+
+    return jsonify(new_list)
 
 if __name__ == "__main__":
     app.run(debug=True)
