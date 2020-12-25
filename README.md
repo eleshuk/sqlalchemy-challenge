@@ -1,3 +1,3 @@
 # sqlalchemy-challenge
 
-![] (year_precip.png)
+![] (sqlalchemy-challenge/year_precip.png)
